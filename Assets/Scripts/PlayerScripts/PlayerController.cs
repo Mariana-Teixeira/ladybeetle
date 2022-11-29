@@ -9,19 +9,19 @@ using UnityEngine.InputSystem.XR;
 //this cannot be initialized without xyz component
 public class PlayerController : MonoBehaviour
 {
+    PlayerCollisions playerCollisions;
+    PlayerMovementStates playerMovement;
+    PlayerAccelerationStates playerAcceleration;
+
     Rigidbody2D body;
     BoxCollider2D boxCollider;
     LayerMask platformMask;
-    LayerMask hookableMask;
-    PlayerCollisions collisions;
-    PlayerStateMachine machine;
     [SerializeField] Camera playerCamera;
 
     #region Input Variables
     PlayerControls playerControls;
     float runInput;
     bool jumpInput;
-    bool hookInput;
     #endregion
 
     #region Movement Variables
@@ -36,10 +36,9 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float timeToMaxSpeed;
     Vector2 mousePositionOnScreen;
     Vector2 mousePositionInWorld;
-    RaycastHit2D hookableHitBox;
-    [SerializeField] float hookSpeed;
-    Vector2 hookDirection;
     #endregion
+
+    public float direction; // used in acceleration
 
     #region Properties
     public Rigidbody2D Body
@@ -70,7 +69,7 @@ public class PlayerController : MonoBehaviour
     {
         get
         {
-            return collisions;
+            return playerCollisions;
         }
     }
 
@@ -87,14 +86,6 @@ public class PlayerController : MonoBehaviour
         get
         {
             return jumpInput;
-        }
-    }
-
-    public bool HookInput
-    {
-        get
-        {
-            return hookInput;
         }
     }
 
@@ -141,48 +132,6 @@ public class PlayerController : MonoBehaviour
             return maxSpeed;
         }
     }
-
-    public Vector2 MousePositionInWorld
-    {
-        get
-        {
-            return mousePositionInWorld;
-        }
-    }
-
-    public float HookSpeed
-    {
-        get
-        {
-            return hookSpeed;
-        }
-    }
-
-    public Vector2 HookDirection
-    {
-        get
-        {
-            return hookDirection;
-        }
-        set
-        {
-            hookDirection = value;
-        }
-    }
-
-    public RaycastHit2D HookHit // needs a description
-    {
-        get
-        {
-            return Physics2D.BoxCast(
-            body.position,
-                boxCollider.size,
-                0.0f,
-                Vector2.zero,
-            0.0f,
-                hookableMask);
-        }
-    }
     #endregion
 
     void Start()
@@ -190,7 +139,6 @@ public class PlayerController : MonoBehaviour
         body = GetComponent<Rigidbody2D>();
         boxCollider = GetComponent<BoxCollider2D>();
         platformMask = LayerMask.GetMask("Platforms"); //could use a private exposed string
-        hookableMask = LayerMask.GetMask("Hookables");
 
         playerControls = new PlayerControls();
         playerControls.Enable();
@@ -201,9 +149,11 @@ public class PlayerController : MonoBehaviour
 
         acceleration = maxSpeed / timeToMaxSpeed;
 
-        machine = new PlayerStateMachine(this);
-        collisions = new PlayerCollisions(this);
+        playerMovement = new PlayerMovementStates(this);
+        playerCollisions = new PlayerCollisions(this);
+        playerAcceleration = new PlayerAccelerationStates(this);
     }
+
     void Update()
     {
         ReadInput();
@@ -215,34 +165,18 @@ public class PlayerController : MonoBehaviour
 
         runInput = playerControls.Player.Running.ReadValue<float>();
         jumpInput = playerControls.Player.Jumping.IsPressed();
-        hookInput = playerControls.Player.Hookshot.IsPressed();
     }
 
     void FixedUpdate() //researched ellapsed time; having it here locked the framerate
     {
         MovePlayer(); // MOVES PLAYER
-        machine.UpdateMachine(); // DOES MOVEMENT CALCULATIONS
-        collisions.UpdateCollisions(); // DOES COLLISIONS CALCULATIONS
+        playerAcceleration.UpdateMachine(); // DOES ACCELERATION CALCULATIONS (associated with the movement script)
+        playerMovement.UpdateMachine(); // DOES MOVEMENT CALCULATIONS
+        playerCollisions.UpdateCollisions(); // DOES COLLISIONS CALCULATIONS
     }
 
     void MovePlayer()
     {
         body.position = body.position + (move * Time.fixedDeltaTime);
-    }
-
-    public bool TryToHook()
-    {
-        mousePositionInWorld = playerCamera.ScreenToWorldPoint(mousePositionOnScreen);
-        hookableHitBox = Physics2D.CircleCast(mousePositionInWorld, 0.2f, Vector2.zero, 0.0f, hookableMask); //in big games, watch out for many points
-
-        if (hookableHitBox.collider == null) return false;
-        
-        float distance = Vector3.Distance(body.transform.position, hookableHitBox.collider.transform.position);
-        Vector2 direction = (mousePositionInWorld - body.position).normalized;
-
-        RaycastHit2D platformRay = Physics2D.Raycast(body.position, direction, distance, PlatformMask);
-
-        if (platformRay.collider == null) return true;
-        else return false;
     }
 }

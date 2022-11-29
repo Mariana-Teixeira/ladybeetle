@@ -132,6 +132,34 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
                     ""isPartOfComposite"": false
                 }
             ]
+        },
+        {
+            ""name"": ""UserInterface"",
+            ""id"": ""904ae904-ba2f-4471-9f30-59911a5eca04"",
+            ""actions"": [
+                {
+                    ""name"": ""ExitGame"",
+                    ""type"": ""Button"",
+                    ""id"": ""e13e500b-4846-46d7-b3ac-1e6f47e4ac90"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""1ac91336-33c2-4e2e-82c8-548d1287b01a"",
+                    ""path"": ""<Keyboard>/x"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ExitGame"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
         }
     ],
     ""controlSchemes"": []
@@ -142,6 +170,9 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
         m_Player_Jumping = m_Player.FindAction("Jumping", throwIfNotFound: true);
         m_Player_Hookshot = m_Player.FindAction("Hookshot", throwIfNotFound: true);
         m_Player_MousePosition = m_Player.FindAction("MousePosition", throwIfNotFound: true);
+        // UserInterface
+        m_UserInterface = asset.FindActionMap("UserInterface", throwIfNotFound: true);
+        m_UserInterface_ExitGame = m_UserInterface.FindAction("ExitGame", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -254,11 +285,48 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
         }
     }
     public PlayerActions @Player => new PlayerActions(this);
+
+    // UserInterface
+    private readonly InputActionMap m_UserInterface;
+    private IUserInterfaceActions m_UserInterfaceActionsCallbackInterface;
+    private readonly InputAction m_UserInterface_ExitGame;
+    public struct UserInterfaceActions
+    {
+        private @PlayerControls m_Wrapper;
+        public UserInterfaceActions(@PlayerControls wrapper) { m_Wrapper = wrapper; }
+        public InputAction @ExitGame => m_Wrapper.m_UserInterface_ExitGame;
+        public InputActionMap Get() { return m_Wrapper.m_UserInterface; }
+        public void Enable() { Get().Enable(); }
+        public void Disable() { Get().Disable(); }
+        public bool enabled => Get().enabled;
+        public static implicit operator InputActionMap(UserInterfaceActions set) { return set.Get(); }
+        public void SetCallbacks(IUserInterfaceActions instance)
+        {
+            if (m_Wrapper.m_UserInterfaceActionsCallbackInterface != null)
+            {
+                @ExitGame.started -= m_Wrapper.m_UserInterfaceActionsCallbackInterface.OnExitGame;
+                @ExitGame.performed -= m_Wrapper.m_UserInterfaceActionsCallbackInterface.OnExitGame;
+                @ExitGame.canceled -= m_Wrapper.m_UserInterfaceActionsCallbackInterface.OnExitGame;
+            }
+            m_Wrapper.m_UserInterfaceActionsCallbackInterface = instance;
+            if (instance != null)
+            {
+                @ExitGame.started += instance.OnExitGame;
+                @ExitGame.performed += instance.OnExitGame;
+                @ExitGame.canceled += instance.OnExitGame;
+            }
+        }
+    }
+    public UserInterfaceActions @UserInterface => new UserInterfaceActions(this);
     public interface IPlayerActions
     {
         void OnRunning(InputAction.CallbackContext context);
         void OnJumping(InputAction.CallbackContext context);
         void OnHookshot(InputAction.CallbackContext context);
         void OnMousePosition(InputAction.CallbackContext context);
+    }
+    public interface IUserInterfaceActions
+    {
+        void OnExitGame(InputAction.CallbackContext context);
     }
 }

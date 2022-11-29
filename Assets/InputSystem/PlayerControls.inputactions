@@ -110,6 +110,34 @@
                     "isPartOfComposite": false
                 }
             ]
+        },
+        {
+            "name": "UserInterface",
+            "id": "904ae904-ba2f-4471-9f30-59911a5eca04",
+            "actions": [
+                {
+                    "name": "ExitGame",
+                    "type": "Button",
+                    "id": "e13e500b-4846-46d7-b3ac-1e6f47e4ac90",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "1ac91336-33c2-4e2e-82c8-548d1287b01a",
+                    "path": "<Keyboard>/x",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ExitGame",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
         }
     ],
     "controlSchemes": []
